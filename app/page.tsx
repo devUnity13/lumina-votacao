@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-export type Model = { id: string; name: string; city: string; bio: string; images: string[]; votes?: number };
+export type Model = { id: string; name: string; city: string; bio: string; images: string[] };
 
 const fallbackModels: Model[] = [
-  { id: "maya", name: "Maya Alves", city: "São Paulo, SP", bio: "Moda, movimento e uma presença que transforma cada passarela.", images: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85"], votes: 1284 },
-  { id: "isadora", name: "Isadora Lima", city: "Rio de Janeiro, RJ", bio: "Autenticidade tropical com uma assinatura editorial inesquecível.", images: ["/isadora-01.jpg", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85"], votes: 1197 },
-  { id: "helena", name: "Helena Costa", city: "Belo Horizonte, MG", bio: "Elegância contemporânea, atitude e uma beleza que fala por si.", images: ["https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=85"], votes: 1043 },
+  { id: "maya", name: "Maya Alves", city: "São Paulo, SP", bio: "Moda, movimento e uma presença que transforma cada passarela.", images: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85"] },
+  { id: "isadora", name: "Isadora Lima", city: "Rio de Janeiro, RJ", bio: "Autenticidade tropical com uma assinatura editorial inesquecível.", images: ["/isadora-01.jpg", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85"] },
+  { id: "helena", name: "Helena Costa", city: "Belo Horizonte, MG", bio: "Elegância contemporânea, atitude e uma beleza que fala por si.", images: ["https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=85"] },
 ];
 
 function Arrow({ direction }: { direction: "left" | "right" }) {
@@ -42,7 +42,7 @@ function ModelCard({ model, onVote, alreadyVoted }: { model: Model; onVote: (mod
         <h3>{model.name}</h3>
         <p>{model.bio}</p>
         <div className="card-footer">
-          <span><strong>{(model.votes || 0).toLocaleString("pt-BR")}</strong> votos</span>
+          <span>Apuração confidencial</span>
           <button className="vote-button" onClick={() => onVote(model)} disabled={alreadyVoted}>{alreadyVoted ? "Voto registrado" : "Votar nesta modelo"}</button>
         </div>
       </div>
@@ -61,7 +61,6 @@ export default function Home() {
     fetch("/api/models").then((r) => r.ok ? r.json() : null).then((data) => data?.models?.length && setModels(data.models)).catch(() => null);
   }, []);
 
-  const totalVotes = useMemo(() => models.reduce((sum, model) => sum + (model.votes || 0), 0), [models]);
   const confirmVote = async () => {
     if (!selected || votedFor) return;
     setStatus("sending");
@@ -74,7 +73,6 @@ export default function Home() {
       if (!response.ok) throw new Error(data.error || "Não foi possível registrar o voto.");
       localStorage.setItem("lumina-vote", selected.id);
       setVotedFor(selected.id);
-      setModels((current) => current.map((model) => model.id === selected.id ? { ...model, votes: (model.votes || 0) + 1 } : model));
       setStatus("success");
     } catch { setStatus("error"); }
   };
@@ -85,7 +83,7 @@ export default function Home() {
       <header id="top" className="hero">
         <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
         <div className="hero-copy"><p className="eyebrow">Escolha do público • Edição 2026</p><h1>Uma passarela.<br />Um voto. <em>Uma estrela.</em></h1><p>Conheça as finalistas, explore seus ensaios e escolha quem merece iluminar esta noite.</p><a className="primary-button" href="#finalistas">Conhecer as finalistas <span>↓</span></a></div>
-        <div className="hero-stat"><span>Votos computados</span><strong>{totalVotes.toLocaleString("pt-BR")}</strong><small>Seu voto pode decidir a vencedora.</small></div>
+        <div className="hero-stat"><span>Apuração protegida</span><strong>Sigilosa</strong><small>Os resultados são acompanhados somente pela organização.</small></div>
       </header>
 
       <section id="finalistas" className="finalists section-shell">
