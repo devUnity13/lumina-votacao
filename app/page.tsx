@@ -14,9 +14,11 @@ function Arrow({ direction }: { direction: "left" | "right" }) {
   return <span aria-hidden="true">{direction === "left" ? "←" : "→"}</span>;
 }
 
-function ModelCard({ model, onVote, alreadyVoted }: { model: Model; onVote: (model: Model) => void; alreadyVoted: boolean }) {
+function ModelCard({ model, onVote, votedFor }: { model: Model; onVote: (model: Model) => void; votedFor: string | null }) {
   const [image, setImage] = useState(0);
   const [failedImages, setFailedImages] = useState<string[]>([]);
+  const alreadyVoted = Boolean(votedFor);
+  const isFavorite = votedFor === model.id;
   const move = (step: number) => setImage((current) => (current + step + model.images.length) % model.images.length);
   const handleImageError = () => {
     const failedUrl = model.images[image];
@@ -42,8 +44,8 @@ function ModelCard({ model, onVote, alreadyVoted }: { model: Model; onVote: (mod
         <h3>{model.name}</h3>
         <p>{model.bio}</p>
         <div className="card-footer">
-          <span>Apuração confidencial</span>
-          <button className="vote-button" onClick={() => onVote(model)} disabled={alreadyVoted}>{alreadyVoted ? "Voto registrado" : "Votar nesta modelo"}</button>
+          <button className={`heart-button${isFavorite ? " selected" : ""}`} onClick={() => onVote(model)} disabled={alreadyVoted} aria-label={isFavorite ? `${model.name} recebeu seu voto` : `Votar em ${model.name}`} aria-pressed={isFavorite}>{isFavorite ? "♥" : "♡"}</button>
+          <button className="vote-button" onClick={() => onVote(model)} disabled={alreadyVoted}>{isFavorite ? "Seu voto" : alreadyVoted ? "Votação concluída" : "Votar nesta modelo"}</button>
         </div>
       </div>
     </article>
@@ -83,12 +85,12 @@ export default function Home() {
       <header id="top" className="hero">
         <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
         <div className="hero-copy"><p className="eyebrow">Escolha do público • Edição 2026</p><h1>Uma passarela.<br />Um voto. <em>Uma estrela.</em></h1><p>Conheça as finalistas, explore seus ensaios e escolha quem merece iluminar esta noite.</p><a className="primary-button" href="#finalistas">Conhecer as finalistas <span>↓</span></a></div>
-        <div className="hero-stat"><span>Apuração protegida</span><strong>Sigilosa</strong><small>Os resultados são acompanhados somente pela organização.</small></div>
+        <div className="hero-stat"><span>Escolha do público</span><strong className="hero-heart">♥</strong><small>Escolha sua favorita e vote com o coração.</small></div>
       </header>
 
       <section id="finalistas" className="finalists section-shell">
         <div className="section-heading"><div><p className="eyebrow">As escolhidas</p><h2>Conheça as finalistas</h2></div><p>Cada história é única. Deslize pelas fotos, conheça cada candidata e escolha com o coração.</p></div>
-        <div className="model-grid">{models.map((model) => <ModelCard key={model.id} model={model} onVote={(item) => { setSelected(item); setStatus("idle"); }} alreadyVoted={Boolean(votedFor)} />)}</div>
+        <div className="model-grid">{models.map((model) => <ModelCard key={model.id} model={model} onVote={(item) => { setSelected(item); setStatus("idle"); }} votedFor={votedFor} />)}</div>
       </section>
 
       <section id="como-votar" className="how"><div className="section-shell how-inner"><p className="eyebrow">Simples e transparente</p><h2>Seu voto em três passos</h2><div className="steps"><div><span>01</span><h3>Explore</h3><p>Conheça as finalistas e veja todos os ensaios.</p></div><div><span>02</span><h3>Escolha</h3><p>Selecione a modelo que mais representa o evento.</p></div><div><span>03</span><h3>Confirme</h3><p>Confirme sua escolha. É permitido um voto por pessoa.</p></div></div></div></section>
