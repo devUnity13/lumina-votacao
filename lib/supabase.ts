@@ -10,7 +10,23 @@ export function getSupabaseAdmin(): SupabaseClient | null {
     return null;
   }
   if (!adminClient) {
-    adminClient = createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const serverFetch: typeof fetch = async (input, init = {}) => {
+      const headers = new Headers(init.headers);
+      const authorization = headers.get("authorization");
+
+      // As chaves modernas sb_secret_ são opacas, não tokens JWT/JWS.
+      // O Supabase deve recebê-las em `apikey`, nunca como `Bearer`.
+      if (secretKey.startsWith("sb_secret_") && authorization === `Bearer ${secretKey}`) {
+        headers.delete("authorization");
+      }
+
+      return fetch(input, { ...init, headers });
+    };
+
+    adminClient = createClient(url, secretKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: serverFetch },
+    });
   }
   return adminClient;
 }
