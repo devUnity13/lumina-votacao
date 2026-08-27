@@ -13,10 +13,21 @@ export async function POST(request: NextRequest) {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
-  if (!supabaseUrl || !secretKey) {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl && process.env.NODE_ENV !== "production") {
     const bytes = Buffer.from(await file.arrayBuffer());
     return NextResponse.json({ url: `data:${file.type};base64,${bytes.toString("base64")}` });
+  }
+  if (!supabaseUrl) {
+    return NextResponse.json({ error: "SUPABASE_URL não está configurada na Vercel." }, { status: 503 });
+  }
+  if (!serviceRoleKey) {
+    return NextResponse.json(
+      {
+        error: "Configure SUPABASE_SERVICE_ROLE_KEY na Vercel com a chave service_role da seção Legacy API Keys do Supabase.",
+      },
+      { status: 503 },
+    );
   }
 
   const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
@@ -25,7 +36,8 @@ export async function POST(request: NextRequest) {
   const uploadResponse = await fetch(`${supabaseUrl}/storage/v1/object/modelos/${storagePath}`, {
     method: "POST",
     headers: {
-      apikey: secretKey,
+      apikey: serviceRoleKey,
+      authorization: `Bearer ${serviceRoleKey}`,
       "content-type": file.type,
       "x-upsert": "false",
     },

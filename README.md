@@ -17,12 +17,13 @@ Sem as variáveis do Supabase, o projeto usa os arquivos de `data/` apenas para 
 ```env
 SUPABASE_URL=https://seu-projeto.supabase.co
 SUPABASE_SECRET_KEY=sb_secret_sua_chave
+SUPABASE_SERVICE_ROLE_KEY=eyJ_sua_chave_service_role_legacy
 ADMIN_PASSWORD=uma-senha-forte
 VOTE_SALT=uma-frase-aleatoria-longa
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-Nunca publique `.env.local` nem exponha `SUPABASE_SECRET_KEY` no navegador ou no GitHub.
+Nunca publique `.env.local` nem exponha `SUPABASE_SECRET_KEY` ou `SUPABASE_SERVICE_ROLE_KEY` no navegador ou no GitHub. A chave `service_role` é usada somente pela rota de upload no servidor, pois o Storage exige um JWT de autorização.
 
 ## Publicar na Vercel
 
