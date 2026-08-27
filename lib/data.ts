@@ -80,6 +80,50 @@ function storagePathFromPublicUrl(imageUrl: string, supabaseUrl: string): string
   }
 }
 
+export async function updateModel(
+  modelId: string,
+  updates: Pick<StoredModel, "name" | "bio" | "images">,
+): Promise<{ storageWarning?: string }> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data: current, error: findError } = await supabase
+      .from("models")
+      .select("id,images")
+      .eq("id", modelId)
+      .maybeSingle();
+    if (findError) throw findError;
+    if (!current) throw new Error("MODEL_NOT_FOUND");
+
+    const { error: updateError } = await supabase
+      .from("models")
+      .update({ name: updates.name, bio: updates.bio, images: updates.images, city: "Mendes, RJ" })
+      .eq("id", modelId);
+    if (updateError) throw updateError;
+
+    const oldImages = Array.isArray(current.images) ? current.images.map(String) : [];
+    const removedImages = oldImages.filter((image) => !updates.images.includes(image));
+    const supabaseUrl = process.env.SUPABASE_URL || "";
+    const storagePaths = removedImages
+      .map((image) => storagePathFromPublicUrl(image, supabaseUrl))
+      .filter((path): path is string => Boolean(path));
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabase.storage.from("modelos").remove(storagePaths);
+      if (storageError) {
+        console.error("[updateModel] Cadastro atualizado, mas houve falha ao limpar fotos antigas:", storageError);
+        return { storageWarning: "As informações foram atualizadas, mas algumas fotos antigas podem precisar ser removidas manualmente do Storage." };
+      }
+    }
+    return {};
+  }
+
+  const models = await readJson<StoredModel[]>(modelsFile, defaults);
+  const index = models.findIndex((model) => model.id === modelId);
+  if (index < 0) throw new Error("MODEL_NOT_FOUND");
+  models[index] = { ...models[index], name: updates.name, city: "Mendes, RJ", bio: updates.bio, images: updates.images };
+  await fs.writeFile(modelsFile, JSON.stringify(models, null, 2));
+  return {};
+}
+
 export async function deleteModel(modelId: string): Promise<{ storageWarning?: string }> {
   const supabase = getSupabaseAdmin();
   if (supabase) {
