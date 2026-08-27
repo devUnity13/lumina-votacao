@@ -12,11 +12,7 @@ export type StoredModel = {
   votes?: number;
 };
 
-const defaults: StoredModel[] = [
-  { id: "maya", name: "Maya Alves", city: "São Paulo, SP", bio: "Moda, movimento e uma presença que transforma cada passarela.", images: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85"], votes: 1284 },
-  { id: "isadora", name: "Isadora Lima", city: "Rio de Janeiro, RJ", bio: "Autenticidade tropical com uma assinatura editorial inesquecível.", images: ["https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85"], votes: 1197 },
-  { id: "helena", name: "Helena Costa", city: "Belo Horizonte, MG", bio: "Elegância contemporânea, atitude e uma beleza que fala por si.", images: ["https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=85"], votes: 1043 },
-];
+const defaults: StoredModel[] = [];
 
 const dataDir = path.join(process.cwd(), "data");
 const modelsFile = path.join(dataDir, "models.json");

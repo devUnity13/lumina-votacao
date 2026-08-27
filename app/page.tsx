@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 
 export type Model = { id: string; name: string; city: string; bio: string; images: string[] };
 
-const fallbackModels: Model[] = [
-  { id: "maya", name: "Maya Alves", city: "São Paulo, SP", bio: "Moda, movimento e uma presença que transforma cada passarela.", images: ["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85"] },
-  { id: "isadora", name: "Isadora Lima", city: "Rio de Janeiro, RJ", bio: "Autenticidade tropical com uma assinatura editorial inesquecível.", images: ["/isadora-01.jpg", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85"] },
-  { id: "helena", name: "Helena Costa", city: "Belo Horizonte, MG", bio: "Elegância contemporânea, atitude e uma beleza que fala por si.", images: ["https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=85", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=85"] },
-];
+const VOTE_STORAGE_KEY = "lumina-vote-oficial-2026";
 
 function Arrow({ direction }: { direction: "left" | "right" }) {
   return <span aria-hidden="true">{direction === "left" ? "←" : "→"}</span>;
@@ -53,14 +49,19 @@ function ModelCard({ model, onVote, votedFor }: { model: Model; onVote: (model: 
 }
 
 export default function Home() {
-  const [models, setModels] = useState<Model[]>(fallbackModels);
+  const [models, setModels] = useState<Model[]>([]);
+  const [loadingModels, setLoadingModels] = useState(true);
   const [selected, setSelected] = useState<Model | null>(null);
   const [votedFor, setVotedFor] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
   useEffect(() => {
-    setVotedFor(localStorage.getItem("lumina-vote"));
-    fetch("/api/models").then((r) => r.ok ? r.json() : null).then((data) => data?.models?.length && setModels(data.models)).catch(() => null);
+    setVotedFor(localStorage.getItem(VOTE_STORAGE_KEY));
+    fetch("/api/models")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setModels(Array.isArray(data?.models) ? data.models : []))
+      .catch(() => setModels([]))
+      .finally(() => setLoadingModels(false));
   }, []);
 
   const confirmVote = async () => {
@@ -73,7 +74,7 @@ export default function Home() {
       const response = await fetch("/api/votes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ modelId: selected.id, voterKey, invite }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível registrar o voto.");
-      localStorage.setItem("lumina-vote", selected.id);
+      localStorage.setItem(VOTE_STORAGE_KEY, selected.id);
       setVotedFor(selected.id);
       setStatus("success");
     } catch { setStatus("error"); }
@@ -90,7 +91,7 @@ export default function Home() {
 
       <section id="finalistas" className="finalists section-shell">
         <div className="section-heading"><div><p className="eyebrow">As escolhidas</p><h2>Conheça as finalistas</h2></div><p>Cada história é única. Deslize pelas fotos, conheça cada candidata e escolha com o coração.</p></div>
-        <div className="model-grid">{models.map((model) => <ModelCard key={model.id} model={model} onVote={(item) => { setSelected(item); setStatus("idle"); }} votedFor={votedFor} />)}</div>
+        {loadingModels ? <div className="no-finalists"><span>○</span><h3>Carregando finalistas…</h3></div> : models.length > 0 ? <div className="model-grid">{models.map((model) => <ModelCard key={model.id} model={model} onVote={(item) => { setSelected(item); setStatus("idle"); }} votedFor={votedFor} />)}</div> : <div className="no-finalists"><span>○</span><h3>Novas finalistas em breve</h3><p>A organização está preparando os perfis desta edição.</p></div>}
       </section>
 
       <section id="como-votar" className="how"><div className="section-shell how-inner"><p className="eyebrow">Simples e transparente</p><h2>Seu voto em três passos</h2><div className="steps"><div><span>01</span><h3>Explore</h3><p>Conheça as finalistas e veja todos os ensaios.</p></div><div><span>02</span><h3>Escolha</h3><p>Selecione a modelo que mais representa o evento.</p></div><div><span>03</span><h3>Confirme</h3><p>Confirme sua escolha. É permitido um voto por pessoa.</p></div></div></div></section>

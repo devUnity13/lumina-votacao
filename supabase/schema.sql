@@ -35,9 +35,4 @@ from public.models m
 left join public.votes v on v.model_id = m.id
 group by m.id;
 
-insert into public.models (id, name, city, bio, images, base_votes)
-values
-  ('maya', 'Maya Alves', 'São Paulo, SP', 'Moda, movimento e uma presença que transforma cada passarela.', '["https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85","https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85","https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85"]'::jsonb, 0),
-  ('isadora', 'Isadora Lima', 'Rio de Janeiro, RJ', 'Autenticidade tropical com uma assinatura editorial inesquecível.', '["/isadora-01.jpg","https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=85","https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85"]'::jsonb, 0),
-  ('helena', 'Helena Costa', 'Belo Horizonte, MG', 'Elegância contemporânea, atitude e uma beleza que fala por si.', '["https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=85","https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=85","https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=85"]'::jsonb, 0)
-on conflict (id) do nothing;
+-- As modelos são cadastradas exclusivamente pelo painel administrativo.
