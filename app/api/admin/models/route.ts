@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addModel } from "@/lib/data";
+import { addModel, deleteModel } from "@/lib/data";
 import { isValidAdminPassword } from "@/lib/admin";
 export async function POST(request: NextRequest) {
   if (!isValidAdminPassword(request.headers.get("x-admin-password"))) return NextResponse.json({ error: "Senha incorreta." }, { status: 401 });
@@ -15,5 +15,26 @@ export async function POST(request: NextRequest) {
       { error: `Não foi possível salvar a modelo: ${details}` },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!isValidAdminPassword(request.headers.get("x-admin-password"))) {
+    return NextResponse.json({ error: "Senha incorreta." }, { status: 401 });
+  }
+  try {
+    const { id } = await request.json();
+    if (typeof id !== "string" || !id.trim()) {
+      return NextResponse.json({ error: "Modelo inválida." }, { status: 400 });
+    }
+    const result = await deleteModel(id);
+    return NextResponse.json({ ok: true, warning: result.storageWarning });
+  } catch (error) {
+    console.error("[api/admin/models] Falha ao excluir modelo:", error);
+    if (error instanceof Error && error.message === "MODEL_NOT_FOUND") {
+      return NextResponse.json({ error: "Essa modelo não existe mais." }, { status: 404 });
+    }
+    const details = error instanceof Error ? error.message : "erro desconhecido";
+    return NextResponse.json({ error: `Não foi possível excluir a modelo: ${details}` }, { status: 500 });
   }
 }

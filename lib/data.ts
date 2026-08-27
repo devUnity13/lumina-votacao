@@ -68,6 +68,55 @@ export async function addModel(model: StoredModel) {
   await fs.writeFile(modelsFile, JSON.stringify(models, null, 2));
 }
 
+function storagePathFromPublicUrl(imageUrl: string, supabaseUrl: string): string | null {
+  try {
+    const image = new URL(imageUrl);
+    const project = new URL(supabaseUrl);
+    const prefix = "/storage/v1/object/public/modelos/";
+    if (image.origin !== project.origin || !image.pathname.startsWith(prefix)) return null;
+    return decodeURIComponent(image.pathname.slice(prefix.length));
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteModel(modelId: string): Promise<{ storageWarning?: string }> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data: model, error: findError } = await supabase
+      .from("models")
+      .select("id,images")
+      .eq("id", modelId)
+      .maybeSingle();
+    if (findError) throw findError;
+    if (!model) throw new Error("MODEL_NOT_FOUND");
+
+    const { error: deleteError } = await supabase.from("models").delete().eq("id", modelId);
+    if (deleteError) throw deleteError;
+
+    const supabaseUrl = process.env.SUPABASE_URL || "";
+    const storagePaths = (Array.isArray(model.images) ? model.images : [])
+      .map(String)
+      .map((image) => storagePathFromPublicUrl(image, supabaseUrl))
+      .filter((path): path is string => Boolean(path));
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabase.storage.from("modelos").remove(storagePaths);
+      if (storageError) {
+        console.error("[deleteModel] Modelo apagada, mas houve falha ao limpar fotos:", storageError);
+        return { storageWarning: "A modelo foi apagada, mas algumas fotos podem precisar ser removidas manualmente do Storage." };
+      }
+    }
+    return {};
+  }
+
+  const models = await readJson<StoredModel[]>(modelsFile, defaults);
+  if (!models.some((model) => model.id === modelId)) throw new Error("MODEL_NOT_FOUND");
+  await fs.writeFile(modelsFile, JSON.stringify(models.filter((model) => model.id !== modelId), null, 2));
+  const votes = await readJson<{ modelId: string; voterHash: string }[]>(votesFile, []);
+  await fs.writeFile(votesFile, JSON.stringify(votes.filter((vote) => vote.modelId !== modelId), null, 2));
+  return {};
+}
+
 export async function registerVote(modelId: string, voterKey: string, invite: string | null, requestSignature: string) {
   const identity = invite ? `invite:${invite}` : `device:${voterKey}:${requestSignature}`;
   const voterHash = createHash("sha256").update(`${process.env.VOTE_SALT || "lumina-local"}:${identity}`).digest("hex");
