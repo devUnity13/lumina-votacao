@@ -12,11 +12,21 @@ export type StoredModel = {
   votes?: number;
 };
 
+export type StoredSponsor = {
+  id: string;
+  name: string;
+  logoUrl: string;
+  website?: string;
+  tier: "principal" | "apoio";
+  displayOrder: number;
+};
+
 const defaults: StoredModel[] = [];
 
 const dataDir = path.join(process.cwd(), "data");
 const modelsFile = path.join(dataDir, "models.json");
 const votesFile = path.join(dataDir, "votes.json");
+const sponsorsFile = path.join(dataDir, "sponsors.json");
 
 function normalizeImageUrl(url: string): string {
   if (url.includes("photo-1488426862026-3ee34a7d66df")) return "/isadora-01.jpg";
@@ -154,6 +164,75 @@ export async function deleteModel(modelId: string): Promise<{ storageWarning?: s
   await fs.writeFile(modelsFile, JSON.stringify(models.filter((model) => model.id !== modelId), null, 2));
   const votes = await readJson<{ modelId: string; voterHash: string }[]>(votesFile, []);
   await fs.writeFile(votesFile, JSON.stringify(votes.filter((vote) => vote.modelId !== modelId), null, 2));
+  return {};
+}
+
+export async function getSponsors(): Promise<StoredSponsor[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("sponsors")
+      .select("id,name,logo_url,website,tier,display_order,created_at")
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data || []).map((sponsor) => ({
+      id: String(sponsor.id),
+      name: String(sponsor.name),
+      logoUrl: String(sponsor.logo_url),
+      website: sponsor.website ? String(sponsor.website) : undefined,
+      tier: sponsor.tier === "principal" ? "principal" : "apoio",
+      displayOrder: Number(sponsor.display_order || 0),
+    }));
+  }
+  return readJson<StoredSponsor[]>(sponsorsFile, []);
+}
+
+export async function addSponsor(sponsor: StoredSponsor): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("sponsors").insert({
+      id: sponsor.id,
+      name: sponsor.name,
+      logo_url: sponsor.logoUrl,
+      website: sponsor.website || null,
+      tier: sponsor.tier,
+      display_order: sponsor.displayOrder,
+    });
+    if (error) throw error;
+    return;
+  }
+  const sponsors = await readJson<StoredSponsor[]>(sponsorsFile, []);
+  sponsors.push(sponsor);
+  await fs.writeFile(sponsorsFile, JSON.stringify(sponsors, null, 2));
+}
+
+export async function deleteSponsor(sponsorId: string): Promise<{ storageWarning?: string }> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data: sponsor, error: findError } = await supabase
+      .from("sponsors")
+      .select("id,logo_url")
+      .eq("id", sponsorId)
+      .maybeSingle();
+    if (findError) throw findError;
+    if (!sponsor) throw new Error("SPONSOR_NOT_FOUND");
+    const { error: deleteError } = await supabase.from("sponsors").delete().eq("id", sponsorId);
+    if (deleteError) throw deleteError;
+
+    const storagePath = storagePathFromPublicUrl(String(sponsor.logo_url), process.env.SUPABASE_URL || "");
+    if (storagePath) {
+      const { error: storageError } = await supabase.storage.from("modelos").remove([storagePath]);
+      if (storageError) {
+        console.error("[deleteSponsor] Patrocinador apagado, mas houve falha ao limpar a logo:", storageError);
+        return { storageWarning: "O patrocinador foi removido, mas a logo pode precisar ser apagada manualmente do Storage." };
+      }
+    }
+    return {};
+  }
+  const sponsors = await readJson<StoredSponsor[]>(sponsorsFile, []);
+  if (!sponsors.some((sponsor) => sponsor.id === sponsorId)) throw new Error("SPONSOR_NOT_FOUND");
+  await fs.writeFile(sponsorsFile, JSON.stringify(sponsors.filter((sponsor) => sponsor.id !== sponsorId), null, 2));
   return {};
 }
 

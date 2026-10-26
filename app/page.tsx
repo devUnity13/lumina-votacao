@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 export type Model = { id: string; name: string; city: string; bio: string; images: string[] };
+export type Sponsor = { id: string; name: string; logoUrl: string; website?: string; tier: "principal" | "apoio"; displayOrder: number };
 
 const VOTE_STORAGE_KEY = "lumina-vote-oficial-2026";
 
@@ -48,9 +49,17 @@ function ModelCard({ model, onVote, votedFor }: { model: Model; onVote: (model: 
   );
 }
 
+function SponsorLogo({ sponsor, featured = false }: { sponsor: Sponsor; featured?: boolean }) {
+  const content = <><img src={sponsor.logoUrl} alt={`Logo ${sponsor.name}`} /><span>{sponsor.name}</span></>;
+  return sponsor.website
+    ? <a className={`sponsor-logo${featured ? " featured" : ""}`} href={sponsor.website} target="_blank" rel="noreferrer" aria-label={`Visitar o site de ${sponsor.name}`}>{content}</a>
+    : <div className={`sponsor-logo${featured ? " featured" : ""}`}>{content}</div>;
+}
+
 export default function Home() {
   const [models, setModels] = useState<Model[]>([]);
   const [loadingModels, setLoadingModels] = useState(true);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [selected, setSelected] = useState<Model | null>(null);
   const [votedFor, setVotedFor] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -62,6 +71,10 @@ export default function Home() {
       .then((data) => setModels(Array.isArray(data?.models) ? data.models : []))
       .catch(() => setModels([]))
       .finally(() => setLoadingModels(false));
+    fetch("/api/sponsors")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setSponsors(Array.isArray(data?.sponsors) ? data.sponsors : []))
+      .catch(() => setSponsors([]));
   }, []);
 
   const confirmVote = async () => {
@@ -82,7 +95,7 @@ export default function Home() {
 
   return (
     <main>
-      <nav className="nav"><a className="brand" href="#top">LUMINA<span>○</span></a><div><a href="#finalistas">Finalistas</a><a href="#como-votar">Como votar</a></div><span className="live"><i /> Votação aberta</span></nav>
+      <nav className="nav"><a className="brand" href="#top">LUMINA<span>○</span></a><div><a href="#finalistas">Finalistas</a><a href="#como-votar">Como votar</a>{sponsors.length > 0 && <a href="#patrocinadores">Parceiros</a>}</div><span className="live"><i /> Votação aberta</span></nav>
       <header id="top" className="hero">
         <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
         <div className="hero-copy"><p className="eyebrow">Escolha do público • Edição 2026</p><h1>Uma passarela.<br />Um voto. <em>Uma estrela.</em></h1><p>Conheça as finalistas, explore seus ensaios e escolha quem merece iluminar esta noite.</p><a className="primary-button" href="#finalistas">Conhecer as finalistas <span>↓</span></a></div>
@@ -95,6 +108,8 @@ export default function Home() {
       </section>
 
       <section id="como-votar" className="how"><div className="section-shell how-inner"><p className="eyebrow">Simples e transparente</p><h2>Seu voto em três passos</h2><div className="steps"><div><span>01</span><h3>Explore</h3><p>Conheça as finalistas e veja todos os ensaios.</p></div><div><span>02</span><h3>Escolha</h3><p>Selecione a modelo que mais representa o evento.</p></div><div><span>03</span><h3>Confirme</h3><p>Confirme sua escolha. É permitido um voto por pessoa.</p></div></div></div></section>
+
+      {sponsors.length > 0 && <section id="patrocinadores" className="sponsors-section"><div className="section-shell"><div className="sponsors-heading"><p className="eyebrow">Juntos nesta passarela</p><h2>Quem torna esta<br /><em>edição possível.</em></h2><p>Marcas que acreditam no talento local e ajudam a transformar esta celebração em realidade.</p></div>{sponsors.some((sponsor) => sponsor.tier === "principal") && <div className="featured-sponsors"><p>Patrocínio principal</p><div>{sponsors.filter((sponsor) => sponsor.tier === "principal").map((sponsor) => <SponsorLogo key={sponsor.id} sponsor={sponsor} featured />)}</div></div>}{sponsors.some((sponsor) => sponsor.tier === "apoio") && <div className="supporting-sponsors"><p>Apoio e realização</p><div>{sponsors.filter((sponsor) => sponsor.tier === "apoio").map((sponsor) => <SponsorLogo key={sponsor.id} sponsor={sponsor} />)}</div></div>}<p className="sponsors-thanks">Nosso agradecimento a cada parceiro que escolheu fazer parte desta história.</p></div></section>}
 
       <footer><a className="brand" href="#top">LUMINA<span>○</span></a><p>Beleza que inspira. Escolhas que brilham.</p><a href="/admin">Área da organização</a></footer>
 

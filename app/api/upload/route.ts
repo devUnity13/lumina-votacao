@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
 
   const form = await request.formData();
   const file = form.get("file");
+  const folder = form.get("folder") === "patrocinadores" ? "patrocinadores" : "";
   if (!(file instanceof File) || !file.type.startsWith("image/") || file.size > 4_000_000) {
     return NextResponse.json({ error: "Envie uma imagem de até 4 MB." }, { status: 400 });
   }
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
   }
 
   const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
-  const storagePath = `${crypto.randomUUID()}-${safeName}`;
+  const fileName = `${crypto.randomUUID()}-${safeName}`;
+  const storagePath = folder ? `${folder}/${fileName}` : fileName;
   const bytes = Buffer.from(await file.arrayBuffer());
   const uploadResponse = await fetch(`${supabaseUrl}/storage/v1/object/modelos/${storagePath}`, {
     method: "POST",

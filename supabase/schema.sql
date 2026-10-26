@@ -19,9 +19,20 @@ create table if not exists public.votes (
   constraint votes_one_per_person unique (voter_hash)
 );
 
+create table if not exists public.sponsors (
+  id text primary key,
+  name text not null,
+  logo_url text not null,
+  website text,
+  tier text not null default 'apoio' check (tier in ('principal', 'apoio')),
+  display_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists votes_model_id_idx on public.votes(model_id);
 alter table public.models enable row level security;
 alter table public.votes enable row level security;
+alter table public.sponsors enable row level security;
 
 -- O site acessa as tabelas somente pelo servidor com a Secret key.
 -- Nenhuma política pública de escrita é criada.
